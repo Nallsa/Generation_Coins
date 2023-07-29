@@ -8,6 +8,8 @@ import { useEffect } from 'react';
 export default function App() {
   const [fontsLoaded] = useFonts({
     Manrope: require('./assets/fonts/Manrope-Regular.ttf'),
+    ManropeMedium: require('./assets/fonts/Manrope-Medium.ttf'),
+    ManropeBold: require('./assets/fonts/Manrope-Bold.ttf'),
   });
 
   return (

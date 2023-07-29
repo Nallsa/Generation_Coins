@@ -5,6 +5,7 @@ export const Container = styled.View`
   position: absolute;
   right: 20%;
   margin-left: 30px;
+  z-index: 1;
 `;
 
 export const ContainerLabel = styled.Text`
@@ -34,6 +35,7 @@ export const ItemCurrency = styled.View`
 
 export const ItemText = styled.Text`
   color: ${({ active }) => (active ? `#f1f1f1` : `#333653`)};
+
   font-size: 16px;
 `;
 

@@ -5,6 +5,7 @@ import {
   Text,
   ImageBackground,
   View,
+  Pressable,
 } from 'react-native';
 import {
   Container,
@@ -15,9 +16,17 @@ import {
   DropDown,
   CurrencyImg,
   ModalText,
+  ModalButton,
+  Modal,
+  ModalItem,
+  ModalList,
+  ModalButtonImg,
+  ModalButtonText,
+  ContainerBanks,
 } from './styles';
 import Сurrency from './Сurrency';
-import SelectDropdown from 'react-native-select-dropdown';
+import Skeleton from '../Skeleton';
+import { FontAwesome } from '@expo/vector-icons';
 
 export default function InputValue({
   inputState,
@@ -25,17 +34,30 @@ export default function InputValue({
   selectedCurr,
   setSelectedCurr,
   combineState,
+  openCurrency,
+  setOpenCurrency,
 }) {
   function onChanged(text) {
     setInputState(text.replace(/[^0-9]/g, ''));
   }
-
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(null);
-  const [items, setItems] = useState([
-    { label: '₽', value: '₽' },
-    { label: '€', value: '€' },
+  const [currency, setСurrency] = useState([
+    {
+      id: 1,
+      img: <FontAwesome name='ruble' size={14} color='#333653' />,
+      value: 'RUB',
+      active: false,
+    },
+    {
+      id: 2,
+      img: <FontAwesome name='euro' size={14} color='#333653' />,
+      value: 'EURO',
+      active: false,
+    },
   ]);
+
+  useEffect(() => {
+    setSelectedCurr(currency[0]);
+  }, [currency]);
 
   return (
     <Container>
@@ -49,111 +71,79 @@ export default function InputValue({
           onChangeText={onChanged}
           value={inputState}
         />
-        {/* <DropDown
-          showArrowIcon={false}
-          placeholder=''
-          style={{}}
-          open={open}
-          value={value}
-          items={items}
-          setOpen={setOpen}
-          setValue={setValue}
-          setItems={setItems}
-          // dropDownContainerStyle={}
-          // containerStyle={{ maxHeight: 10 }}
-          containerProps={{ style: { maxHeight: 10, maxWidth: 32 } }}
-        /> */}
-        <View style={styles.buttonStyle}>
-          <View style={styles.dropdownStyle}>
-            <View style={styles.rowStyle}>
-              <CurrencyImg />
-              <ModalText>RUB</ModalText>
-            </View>
-          </View>
-        </View>
-        {/* <DropDown
-          data={items}
-          dropdownOverlayColor={'transparent'}
-          buttonStyle={styles.buttonStyle}
-          buttonTextStyle={styles.buttonTextStyle}
-          dropdownStyle={styles.dropdownStyle}
-          rowStyle={styles.rowStyle}
-          selectedRowStyle={styles.selectedRowStyle}
-          selectedRowTextStyle={styles.selectedRowTextStyle}
-          showsVerticalScrollIndicator={false}
-          defaultValue={items[0]}
-          onSelect={(selectedItem, index) => {
-            return selectedItem;
-          }}
-          buttonTextAfterSelection={(selectedItem, index) => {
-            return <CurrencyImg />;
-          }}
-          rowTextForSelection={(item, index) => {
-            return item.value;
-          }}
-        /> */}
-      </ContainerPrice>
-      <Сurrency selectedCurr={selectedCurr} setSelectedCurr={setSelectedCurr} />
 
-      <List
-        data={combineState}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <TextPrice>
-            {item.platform} : {parseFloat(item.totalCurr).toFixed(2)} USDT
-          </TextPrice>
+        <Pressable onPress={() => setOpenCurrency(prev => !prev)}>
+          <ModalButton>
+            {selectedCurr ? (
+              <>
+                <ModalButtonImg>{selectedCurr.img}</ModalButtonImg>
+                <ModalButtonText>{selectedCurr.value}</ModalButtonText>
+              </>
+            ) : (
+              <></>
+            )}
+          </ModalButton>
+        </Pressable>
+        {openCurrency ? (
+          <Modal>
+            <ModalList
+              data={currency}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    setСurrency(
+                      currency.map(currItem => {
+                        if (item.id === currItem.id)
+                          return { ...currItem, active: true };
+                        return { ...currItem, active: false };
+                      })
+                    );
+                    setSelectedCurr(item);
+                    setOpenCurrency(false);
+                  }}
+                >
+                  <ModalItem
+                    style={
+                      item === currency.at(-1)
+                        ? { borderBottomWidth: 0, paddingBottom: 0 }
+                        : null
+                    }
+                  >
+                    {item.img}
+                    <ModalText active={item.active ? true : false}>
+                      {item.value}
+                    </ModalText>
+                  </ModalItem>
+                </Pressable>
+              )}
+            />
+          </Modal>
+        ) : (
+          <></>
         )}
-      />
+      </ContainerPrice>
+
+      {combineState.length == 0 ? (
+        <List
+          data={[...new Array(2)]}
+          keyExtractor={(item, index) => index}
+          scrollEnabled={true}
+          renderItem={(_, index) => <Skeleton height={20} index={_.index} />}
+        />
+      ) : (
+        <List
+          data={combineState}
+          keyExtractor={(item, index) => index}
+          renderItem={({ item }) => (
+            <TextPrice>
+              {item.platform} : {parseFloat(item.totalCurr).toFixed(2)} USDT
+            </TextPrice>
+          )}
+        />
+      )}
+
+      {/* <Сurrency selectedCurr={selectedCurr} setSelectedCurr={setSelectedCurr} /> */}
     </Container>
   );
 }
-
-const styles = StyleSheet.create({
-  buttonStyle: {
-    width: 80,
-    height: 40,
-    position: 'absolute',
-    right: 0,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-    backgroundColor: '#fff',
-    borderColor: '#333653',
-    borderWidth: 2,
-  },
-  buttonTextStyle: {
-    fontFamily: 'Manrope',
-    color: '#1c1f3e',
-    fontSize: 18,
-  },
-  dropdownStyle: {
-    width: 100,
-    // minHeight: 120,
-    paddingBottom: 10,
-    backgroundColor: '#fff',
-    // borderColor: '#333653',
-    // borderWidth: 1,
-    position: 'absolute',
-    top: 45,
-    // right: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.27,
-    shadowRadius: 4.65,
-
-    elevation: 6,
-  },
-  rowStyle: {
-    flexDirection: 'row',
-    width: 90,
-    borderBottomColor: '#333653',
-    borderBottomWidth: 1,
-    // backgroundColor: 'black',
-    padding: 10,
-    // marginTop: 15,
-  },
-});

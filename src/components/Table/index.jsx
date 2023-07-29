@@ -7,8 +7,9 @@ import {
   Dimensions,
   FlatList,
 } from 'react-native';
+import Skeleton from '../Skeleton';
 
-export default function Table({ combineState }) {
+export default function Table({ combineState, loading }) {
   return (
     <View style={styles.wrapper}>
       {/* Table Container */}
@@ -26,11 +27,18 @@ export default function Table({ combineState }) {
           </View>
         </View>
 
-        {combineState.length > 0 ? (
+        {combineState.length == 0 ? (
+          <FlatList
+            data={[...new Array(2)]}
+            keyExtractor={(item, index) => index}
+            scrollEnabled={true}
+            renderItem={(_, index) => <Skeleton index={_.index} />}
+          />
+        ) : (
           <FlatList
             data={combineState}
-            keyExtractor={item => item.id}
-            scrollEnabled={false}
+            keyExtractor={(item, index) => index}
+            scrollEnabled={true}
             renderItem={({ item, index }) => (
               <View key={item.id} style={styles.table_body_single_row}>
                 <View style={{ width: '15%' }}>
@@ -45,8 +53,6 @@ export default function Table({ combineState }) {
               </View>
             )}
           />
-        ) : (
-          <></>
         )}
       </View>
     </View>

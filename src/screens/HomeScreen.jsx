@@ -1,8 +1,16 @@
-import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  ActivityIndicator,
+  Text,
+  Pressable,
+  ScrollView,
+} from 'react-native';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Table from '../components/Table';
 import InputValue from '../components/InputValue';
+import Banks from '../components/Banks';
 import styled from 'styled-components/native';
 import Logo from '../../assets/Logo.svg';
 
@@ -41,11 +49,23 @@ const ButtonText = styled.Text`
   color: white;
 `;
 
+const WrapperInputs = styled.View`
+  margin: 0 auto;
+
+  flex-direction: row;
+`;
+
 export default function Home() {
   const [combineState, setCombineState] = useState([]);
   const [inputState, setInputState] = useState('');
-  const [selectedCurr, setSelectedCurr] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedCurr, setSelectedCurr] = useState('');
+  const [openCurrency, setOpenCurrency] = useState(false);
+  const [openBanks, setOpenBanks] = useState(false);
+  const [bankValue, setBankValue] = useState({
+    id: 0,
+    label: 'Все способы оплаты',
+  });
 
   async function binance() {
     const res = await axios.post(
@@ -56,7 +76,7 @@ export default function Home() {
         countries: [],
         fiat: 'RUB',
         page: 1,
-        payTypes: [],
+        payTypes: bankValue.binance ? [bankValue.binance] : [],
         proMerchantAds: false,
         publisherType: null,
         rows: 1,
@@ -83,25 +103,21 @@ export default function Home() {
 
     return binance;
   }
+
   async function bybit() {
     const res = await axios.post(
       'https://api2.bybit.com/fiat/otc/item/online',
       {
-        amount: String(inputState),
+        amount: inputState,
         authMaker: false,
         canTrade: false,
         currencyId: 'RUB',
         page: '1',
-        payment: [],
+        payment: bankValue.bybit ? [bankValue.bybit.toString()] : [],
         side: '1',
         size: '1',
         tokenId: 'USDT',
         userId: 75111536,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
       }
     );
 
@@ -133,8 +149,8 @@ export default function Home() {
 
         totalCurr = preTotal - commission;
       }
-
       return {
+        id: item.id,
         price: item.price,
         volume: item.volume,
         platform: 'Garantex',
@@ -147,53 +163,75 @@ export default function Home() {
 
   async function getAllUsers() {
     setLoading(true);
-    Promise.all([binance(), bybit(), garantex()])
-      .then(([binanceArr, bybitArr, garantexArr]) =>
+    Promise.all([binance(), bybit(), garantex()]).then(
+      async ([binanceArr, b, garantexArr]) => {
         setCombineState(
-          [...binanceArr, ...bybitArr, ...garantexArr].sort(
+          [...binanceArr, ...b, ...garantexArr].sort(
             (a, b) => a.price - b.price
           )
-        )
-      )
-      .finally(() => setLoading(false));
+        );
+
+        // const bybitRes = await bybit();
+
+        // setCombineState(
+        //   [...binanceArr, ...garantexArr, ...bybitRes].sort(
+        //     (a, b) => a.price - b.price
+        //   )
+        // );
+      }
+    );
+
+    setLoading(false);
   }
 
   useEffect(() => {
-    garantex();
     getAllUsers();
   }, []);
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.horizontal]}>
-        <ActivityIndicator size='large' color='#333653' />
-      </View>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <View style={[styles.container, styles.horizontal]}>
+  //       <ActivityIndicator size='large' color='#333653' />
+  //     </View>
+  //   );
+  // }
 
   return (
     <View style={styles.container}>
-      {/* <ScrollView> */}
-      <WrapperContent>
-        <WrapperImg>
-          <ImageLogo />
-        </WrapperImg>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <Pressable onPress={() => setOpenCurrency(false)}>
+          <WrapperContent>
+            <WrapperImg>
+              <ImageLogo />
+            </WrapperImg>
+            <WrapperInputs>
+              <InputValue
+                selectedCurr={selectedCurr}
+                setSelectedCurr={setSelectedCurr}
+                inputState={inputState}
+                setInputState={setInputState}
+                combineState={combineState}
+                getAllUsers={getAllUsers}
+                openCurrency={openCurrency}
+                setOpenCurrency={setOpenCurrency}
+              />
+              <Banks bankValue={bankValue} setBankValue={setBankValue} />
+            </WrapperInputs>
 
-        <InputValue
-          selectedCurr={selectedCurr}
-          setSelectedCurr={setSelectedCurr}
-          inputState={inputState}
-          setInputState={setInputState}
-          combineState={combineState}
-          getAllUsers={getAllUsers}
-        />
-        <Table combineState={combineState} />
+            <Table loading={loading} combineState={combineState} />
 
-        <Button onPress={() => getAllUsers()}>
-          <ButtonText>Refresh</ButtonText>
-        </Button>
-      </WrapperContent>
-      {/* </ScrollView> */}
+            <Button
+              disabled={loading}
+              onPress={() => {
+                setCombineState([]);
+                getAllUsers();
+              }}
+            >
+              <ButtonText>Refresh</ButtonText>
+            </Button>
+          </WrapperContent>
+        </Pressable>
+      </ScrollView>
     </View>
   );
 }
